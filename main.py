@@ -1,4 +1,3 @@
-# © Copyright IBM Corp. 2019
 
 
 import pickle
@@ -32,8 +31,7 @@ args = {'data_set' : 'mIN',
        }
 
 model = DeltaEncoder(args, features_train, labels_train, features_test, labels_test, episodes_1shot)
-model.train(verbose=False)
-
+model.train(verbose=True)
 
 
 ######### 5-shot Experiment #########
@@ -54,4 +52,4 @@ args = {'data_set' : 'mIN',
        }
 
 model = DeltaEncoder(args, features_train, labels_train, features_test, labels_test, episodes_5shot)
-model.train(verbose=False)
+model.train(verbose=True)
