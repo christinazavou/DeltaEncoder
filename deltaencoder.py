@@ -22,6 +22,10 @@ class linear_classifier(object):
         self.features_train = features_train
         self.labels_train = labels_train
 
+        # features_test_set = set(["".join(np.round(x, 3).astype('str')) for x in features_test])
+        # features_train_set = set(["".join(np.round(x, 3).astype('str')) for x in features_train])
+        # print("intersect: {}".format(len(features_test_set & features_train_set)))
+
         # get the class indices of classes that have at least one training example
         self.class_idx = np.where(np.sum(self.labels_train, axis=0) != 0)[0]
 
@@ -35,8 +39,8 @@ class linear_classifier(object):
         self.labels_test = self.labels_test[idx]
         self.features_test = self.features_test[idx]
 
-        print("labels_train in lin_class: {}".format(self.labels_train.shape))
-        print("labels_test in lin_class: {}".format(self.labels_test.shape))
+        # print("labels_train in lin_class: {}".format(self.labels_train.shape))
+        # print("labels_test in lin_class: {}".format(self.labels_test.shape))
 
         self.learning_rate = learning_rate
         self.number_epoch = number_epoch
@@ -91,7 +95,8 @@ class linear_classifier(object):
 
         #         self.features_test_temp = self.features_test
         self.linear_sess = sess
-        # todo check if this initializes variables from DeltaEncoder that it shouldn't
+        # Note that it's ok to run tf.global_variables_initializer() here without manipulating variables of DeltaEncoder
+        # since use a different session !
         init = tf.global_variables_initializer()
         self.linear_sess.run(init)
         self.learning_rate = 0.001
@@ -310,6 +315,7 @@ class DeltaEncoder(object):
         labels = np.zeros((nb_ex * labels_class.shape[0], labels_class.shape[1]))
         reference_features = np.zeros((nb_ex * labels_class.shape[0], self.reference_features.shape[1]))
         for c in xrange(labels_class.shape[0]):
+            # print("generating features {} * {}:({} * {}) + {} ".format(c, nb_ex, c, nb_ex, nb_ex))
             if True:  # sample "noise" from training set
                 inds = np.random.permutation(xrange(self.features.shape[0]))[:nb_ex]
                 noise = self.session.run(self.pred_noise, {
@@ -333,30 +339,34 @@ class DeltaEncoder(object):
         acc = []
 
         for episode_data in self.episodes:
+            # episode_data = (N way,K shot, F feature)
+            # in one episode, all the K shots have the same N ways, but different features
             unique_labels_episode = episode_data[1][:, 0, :]
 
-            episodelabels = np.where(np.sum(unique_labels_episode, axis=0) != 0)[0]
-            print("episodelabels: {}".format(episodelabels))
+            # episodelabels = np.where(np.sum(unique_labels_episode, axis=0) != 0)[0]
+            # print("episodelabels: {}".format(episodelabels))
 
             features, reference_features, labels = [], [], []
             for shot in range(max(self.num_shots, 1)):
+                # episodelabels = np.where(np.sum(episode_data[1][:, shot, :], axis=0) != 0)[0]
+                # print("episodelabelsshot: {}".format(episodelabels))
                 unique_reference_features_test = episode_data[0][:, shot, :]
                 features_, reference_features_, labels_ = self.generate_samples(unique_reference_features_test,
                                                                                 unique_labels_episode,
                                                                                 self.nb_fake_img / max(self.num_shots,
                                                                                                        1))
                 features.append(unique_reference_features_test)
-                reference_features.append(unique_reference_features_test)
+                # reference_features.append(unique_reference_features_test)
                 labels.append(unique_labels_episode)
                 features.append(features_)
-                reference_features.append(reference_features_)
+                # reference_features.append(reference_features_)
                 labels.append(labels_)
                 if verbose:
                     print(np.mean([np.linalg.norm(x) for x in unique_reference_features_test]))
                     print(np.mean([np.linalg.norm(x) for x in features_]))
 
             features = np.concatenate(features)
-            reference_features = np.concatenate(reference_features)
+            # reference_features = np.concatenate(reference_features)
             labels = np.concatenate(labels)
             lin_model = linear_classifier(features, labels, self.features_test,
                                           self.labels_test)
